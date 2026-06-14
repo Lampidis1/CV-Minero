@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CV Minero QR · Antofagasta Minerals</title>
+  <meta name="description" content="Demo funcional · Sistema de apresto laboral con IA para ferias laborales mineras." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #F4F7F8; }
+    #root { min-height: 100vh; }
+    #loader { position: fixed; inset: 0; display: grid; place-items: center; font-family: 'Barlow', system-ui, sans-serif; color: #006973; background: #F4F7F8; z-index: 9999; transition: opacity .3s; }
+    #loader.hidden { opacity: 0; pointer-events: none; }
+    .spinner { width: 38px; height: 38px; border: 3px solid #D7DEE4; border-top-color: #00A399; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 14px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .err { max-width: 600px; padding: 24px; background: #fff; border: 1px solid #D7DEE4; border-radius: 12px; font-family: 'Barlow', sans-serif; color: #1C2632; }
+    .err h3 { font-family: 'Barlow Condensed', sans-serif; color: #D0311B; margin: 0 0 8px; }
+    .err code { background: #F4F7F8; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+  </style>
+
+  <!-- Mapa de importación: traduce los `import "react"` del JSX a URLs CDN -->
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@18.3.1",
+      "react-dom": "https://esm.sh/react-dom@18.3.1",
+      "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+      "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
+      "lucide-react": "https://esm.sh/lucide-react@0.395.0?deps=react@18.3.1&external=react",
+      "recharts": "https://esm.sh/recharts@2.12.7?deps=react@18.3.1,react-dom@18.3.1&external=react,react-dom"
+    }
+  }
+  </script>
+
+  <!-- Babel Standalone para transformar JSX en el navegador -->
+  <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+</head>
+<body>
+  <div id="loader">
+    <div style="text-align:center">
+      <div class="spinner"></div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:22px;letter-spacing:1.5px;color:#1C2632">CV MINERO QR</div>
+      <div style="font-size:13px;color:#5F6973;margin-top:4px">Cargando demo…</div>
+    </div>
+  </div>
+
+  <div id="root"></div>
+
+  <script>
+    (async function () {
+      try {
+        // 1) Cargar el JSX como texto
+        const res = await fetch("./cv-minero-qr-demo.jsx");
+        if (!res.ok) throw new Error("No se pudo cargar cv-minero-qr-demo.jsx (HTTP " + res.status + ")");
+        let code = await res.text();
+
+        // 2) Reescribir `export default function App` a una asignación a window
+        code = code.replace(/export\s+default\s+function\s+App/, "function App");
+        code += "\n\nwindow.__App = App;\n";
+
+        // 3) Transformar JSX -> JS de módulo, preservando los `import` (importmap los resuelve)
+        const out = Babel.transform(code, {
+          presets: [["react", { runtime: "automatic" }]],
+          sourceType: "module",
+        }).code;
+
+        // 4) Inyectar como módulo
+        const blob = new Blob([out], { type: "text/javascript" });
+        const url = URL.createObjectURL(blob);
+        await import(url);
+
+        // 5) Renderizar
+        const React = await import("react");
+        const { createRoot } = await import("react-dom/client");
+        createRoot(document.getElementById("root")).render(React.createElement(window.__App));
+
+        document.getElementById("loader").classList.add("hidden");
+        setTimeout(() => document.getElementById("loader").remove(), 400);
+      } catch (e) {
+        console.error(e);
+        document.getElementById("loader").innerHTML =
+          '<div class="err"><h3>No se pudo cargar el demo</h3>' +
+          '<p>Verifica que <code>cv-minero-qr-demo.jsx</code> esté en la misma carpeta que este <code>index.html</code>.</p>' +
+          '<p style="color:#5F6973;font-size:12px;margin-top:10px">Detalle: ' + e.message + '</p></div>';
+      }
+    })();
+  </script>
+</body>
+</html>
